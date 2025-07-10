@@ -1,56 +1,65 @@
-// ast.hpp
 #pragma once
 #include <memory>
 #include <string>
-#include "context.hpp"
+#include <unordered_map>
+#include <vector>
+using namespace std;
 
-struct Expression {
+struct Context
+{
+    unordered_map<string, double> variables;
+};
+
+struct Expression
+{
     virtual double evaluate(Context& ctx) const = 0;
     virtual ~Expression() = default;
 };
 
-using ExprPtr = std::unique_ptr<Expression>;
+using ExprPtr = unique_ptr<Expression>;
 
-struct Number : public Expression {
+struct Number : Expression
+{
     double value;
     Number(double v) : value(v) {}
     double evaluate(Context&) const override { return value; }
 };
 
-struct BinaryOp : public Expression {
-    char op;
+struct BinaryOp : Expression
+{
+    char operation;
     ExprPtr left, right;
 
-    BinaryOp(char op, ExprPtr l, ExprPtr r)
-        : op(op), left(std::move(l)), right(std::move(r)) {}
+    BinaryOp(char op, ExprPtr l, ExprPtr r) : operation(op), left(move(l)), right(move(r)) {}
 
     double evaluate(Context& ctx) const override;
 };
 
-struct FunctionCall : public Expression {
-    std::string name;
-    std::vector<ExprPtr> args;
+struct FunctionCall : Expression
+{
+    string name;
+    vector<ExprPtr> args;
 
-    FunctionCall(std::string name, std::vector<ExprPtr> args)
-        : name(std::move(name)), args(std::move(args)) {}
-
-    double evaluate(Context& ctx) const override;
-};
-
-struct Variable : public Expression {
-    std::string name;
-
-    Variable(std::string name) : name(std::move(name)) {}
+    FunctionCall(string name, vector<ExprPtr> args) : name(move(name)), args(move(args)) {}
 
     double evaluate(Context& ctx) const override;
 };
 
-struct Assignment : public Expression {
-    std::string name;
+struct Variable : Expression
+{
+    string name;
+
+    Variable(string name) : name(move(name)) {}
+
+    double evaluate(Context& ctx) const override;
+};
+
+struct Assignment : Expression
+{
+    string name;
     ExprPtr value;
 
-    Assignment(std::string name, ExprPtr val)
-        : name(std::move(name)), value(std::move(val)) {}
+    Assignment(string name, ExprPtr val) : name(move(name)), value(move(val)) {}
 
     double evaluate(Context& ctx) const override;
 };

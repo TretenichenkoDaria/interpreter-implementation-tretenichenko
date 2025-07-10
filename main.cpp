@@ -1,30 +1,37 @@
 #include <iostream>
 #include <string>
-#include <memory>
 
-#include "parser.hpp"
-#include "context.hpp"
+#include "ast.hpp"
+using namespace std;
 
-int main() {
+ExprPtr parse(const std::string& input);
+
+int main()
+{
     Context ctx;
 
-    std::string line;
-    std::cout << "> ";
-    while (std::getline(std::cin, line)) {
-        if (line.empty()) {
-            std::cout << "> ";
+    string line;
+    cout << "> ";
+    while (getline(cin, line))
+    {
+        if (line.empty())
+        {
+            cout << "> ";
             continue;
         }
 
-        try {
+        try
+        {
             auto expr = parse(line);
             double result = expr->evaluate(ctx);
-            std::cout << result << std::endl;
-        } catch (const std::exception& ex) {
-            std::cerr << "Error: " << ex.what() << std::endl;
+            cout << result << endl;
+        }
+        catch (const exception& ex)
+        {
+            cerr << "error: " << ex.what() << endl;
         }
 
-        std::cout << "> ";
+        cout << "> ";
     }
 
     return 0;

@@ -1,4 +1,3 @@
-#include "parser.hpp"
 #include "ast.hpp"
 
 #include <cctype>
@@ -8,138 +7,185 @@
 
 using namespace std;
 
-// ======== ДОПОМІЖНІ ФУНКЦІЇ ========
+ExprPtr parse(const string& input);
 
-static void skipSpaces(const string& input, size_t& pos) {
-    while (pos < input.size() && isspace(input[pos])) pos++;
+static void skipSpaces(const string& input, size_t& position)
+{
+    while (position < input.size() && isspace(input[position])) position++;
 }
 
-static double parseNumber(const string& input, size_t& pos) {
-    skipSpaces(input, pos);
-    size_t start = pos;
-    while (pos < input.size() && (isdigit(input[pos]) || input[pos] == '.')) pos++;
-    if (start == pos) throw runtime_error("Expected number");
-    return stod(input.substr(start, pos - start));
+static double parseNumber(const string& input, size_t& position)
+{
+    skipSpaces(input, position);
+    size_t start = position;
+    while (position < input.size() && (isdigit(input[position]) || input[position] == '.'))
+    {
+        position++;
+    }
+    if (start == position)
+    {
+        throw runtime_error("expected number");
+    }
+    return stod(input.substr(start, position - start));
 }
 
-static string parseIdentifier(const string& input, size_t& pos) {
-    skipSpaces(input, pos);
-    size_t start = pos;
-    if (!isalpha(input[pos])) throw runtime_error("Expected identifier");
-    while (pos < input.size() && (isalnum(input[pos]) || input[pos] == '_')) pos++;
-    return input.substr(start, pos - start);
+static string parseIdentifier(const string& input, size_t& position)
+{
+    skipSpaces(input, position);
+    size_t start = position;
+    if (!isalpha(input[position]))
+    {
+        throw runtime_error("expected identifier");
+    }
+    while (position < input.size() && (isalnum(input[position]) || input[position] == '_'))
+    {
+        position++;
+    }
+    return input.substr(start, position - start);
 }
 
-// ======== FORWARD DECLARATIONS ========
-ExprPtr parseExpression(const string& input, size_t& pos);
-ExprPtr parseTerm(const string& input, size_t& pos);
-ExprPtr parseFactor(const string& input, size_t& pos);
+ExprPtr parseExpression(const string& input, size_t& position);
+ExprPtr parseTerm(const string& input, size_t& position);
+ExprPtr parseFactor(const string& input, size_t& position);
 
-// ======== ВИРАЗИ: +, - ========
-ExprPtr parseExpression(const string& input, size_t& pos) {
-    ExprPtr left = parseTerm(input, pos);
-    skipSpaces(input, pos);
+ExprPtr parseExpression(const string& input, size_t& position)
+{
+    ExprPtr left = parseTerm(input, position);
+    skipSpaces(input, position);
 
-    while (pos < input.size() && (input[pos] == '+' || input[pos] == '-')) {
-        char op = input[pos++];
-        ExprPtr right = parseTerm(input, pos);
+    while (position < input.size() && (input[position] == '+' || input[position] == '-'))
+    {
+        char op = input[position++];
+        ExprPtr right = parseTerm(input, position);
         left = make_unique<BinaryOp>(op, move(left), move(right));
-        skipSpaces(input, pos);
+        skipSpaces(input, position);
     }
 
     return left;
 }
 
-// ======== ТЕРМІНИ: *, / ========
-ExprPtr parseTerm(const string& input, size_t& pos) {
-    ExprPtr left = parseFactor(input, pos);
-    skipSpaces(input, pos);
+ExprPtr parseTerm(const string& input, size_t& position)
+{
+    ExprPtr left = parseFactor(input, position);
+    skipSpaces(input, position);
 
-    while (pos < input.size() && (input[pos] == '*' || input[pos] == '/')) {
-        char op = input[pos++];
-        ExprPtr right = parseFactor(input, pos);
+    while (position < input.size() && (input[position] == '*' || input[position] == '/'))
+    {
+        char op = input[position++];
+        ExprPtr right = parseFactor(input, position);
         left = make_unique<BinaryOp>(op, move(left), move(right));
-        skipSpaces(input, pos);
+        skipSpaces(input, position);
     }
 
     return left;
 }
 
-// ======== ФАКТОРИ: числа, дужки, функції, змінні ========
-ExprPtr parseFactor(const string& input, size_t& pos) {
-    skipSpaces(input, pos);
+ExprPtr parseFactor(const string& input, size_t& position)
+{
+    skipSpaces(input, position);
 
-    // Дужки
-    if (input[pos] == '(') {
-        pos++; // пропустити '('
-        ExprPtr expr = parseExpression(input, pos);
-        skipSpaces(input, pos);
-        if (pos >= input.size() || input[pos] != ')')
-            throw runtime_error("Expected ')'");
-        pos++; // пропустити ')'
+    if (input[position] == '-' || input[position] == '+')
+    {
+        char sign = input[position++];
+        ExprPtr factor = parseFactor(input, position);
+        if (sign == '-')
+        {
+            return make_unique<BinaryOp>('*', make_unique<Number>(-1), move(factor));
+        }
+        else
+        {
+            return factor;
+        }
+    }
+
+    if (input[position] == '(')
+        {
+        position++;
+        ExprPtr expr = parseExpression(input, position);
+        skipSpaces(input, position);
+        if (position >= input.size() || input[position] != ')')
+        {
+            throw runtime_error("expected )");
+        }
+        position++;
         return expr;
     }
 
-    // Ідентифікатор (може бути функція або змінна)
-    if (isalpha(input[pos])) {
-        string name = parseIdentifier(input, pos);
-        skipSpaces(input, pos);
+    if (isalpha(input[position]))
+    {
+        string name = parseIdentifier(input, position);
+        skipSpaces(input, position);
 
-        // Виклик функції
-        if (pos < input.size() && input[pos] == '(') {
-            pos++; // пропустити '('
+        if (position < input.size() && input[position] == '(')
+        {
+            position++;
             vector<ExprPtr> args;
 
-            // обробка аргументів
-            skipSpaces(input, pos);
-            if (input[pos] != ')') {
-                while (true) {
-                    args.push_back(parseExpression(input, pos));
-                    skipSpaces(input, pos);
-                    if (input[pos] == ')') break;
-                    if (input[pos] != ',') throw runtime_error("Expected ',' or ')'");
-                    pos++; // пропустити ','
+            skipSpaces(input, position);
+            if (input[position] != ')')
+            {
+                while (true)
+                {
+                    args.push_back(parseExpression(input, position));
+                    skipSpaces(input, position);
+                    if (input[position] == ')')
+                    {
+                        break;
+                    }
+                    if (input[position] != ',')
+                    {
+                        throw runtime_error("expected , or )");
+                    }
+                    position++;
                 }
             }
 
-            if (input[pos] != ')') throw runtime_error("Expected ')'");
-            pos++; // пропустити ')'
+            if (input[position] != ')')
+            {
+                throw runtime_error("expected )");
+            }
+            position++;
+
             return make_unique<FunctionCall>(name, move(args));
         }
 
-        // Інакше – це змінна
         return make_unique<Variable>(name);
     }
 
-    // Число
-    return make_unique<Number>(parseNumber(input, pos));
+    return make_unique<Number>(parseNumber(input, position));
 }
 
-// ======== ГОЛОВНА ТОЧКА ВХОДУ ========
-ExprPtr parse(const std::string& input) {
-    size_t pos = 0;
-    skipSpaces(input, pos);
+ExprPtr parse(const string& input)
+{
+    size_t position = 0;
+    skipSpaces(input, position);
 
-    // Перевірка на "var x = ..."
-    if (input.compare(pos, 3, "var") == 0) {
-        pos += 3;
-        skipSpaces(input, pos);
-        std::string name = parseIdentifier(input, pos);
-        skipSpaces(input, pos);
-        if (input[pos] != '=') throw std::runtime_error("Expected '=' after variable name");
-        pos++; // пропустити '='
-        ExprPtr val = parseExpression(input, pos);
-        skipSpaces(input, pos);
-        if (pos != input.length())
-            throw std::runtime_error("Unexpected characters after assignment");
-        return std::make_unique<Assignment>(name, std::move(val));
+    if (input.compare(position, 3, "var") == 0)
+        {
+        position += 3;
+        skipSpaces(input, position);
+        string name = parseIdentifier(input, position);
+        skipSpaces(input, position);
+        if (input[position] != '=')
+        {
+            throw runtime_error("expected = after variable name");
+        }
+
+        position++;
+        ExprPtr val = parseExpression(input, position);
+        skipSpaces(input, position);
+        if (position != input.length())
+        {
+            throw runtime_error("unexpected characters after assignment");
+        }
+        return make_unique<Assignment>(name, move(val));
     }
 
-    // Інакше — це просто вираз
-    ExprPtr result = parseExpression(input, pos);
-    skipSpaces(input, pos);
-    if (pos != input.length()) {
-        throw std::runtime_error("Unexpected characters after expression");
+    ExprPtr result = parseExpression(input, position);
+    skipSpaces(input, position);
+    if (position != input.length())
+    {
+        throw runtime_error("unexpected characters after expression");
     }
     return result;
 }
