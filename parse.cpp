@@ -7,7 +7,7 @@
 
 using namespace std;
 
-ExprPtr parse(const string& input);
+ExpressionPointer parse(const string& input);
 
 static void skipSpaces(const string& input, size_t& position)
 {
@@ -44,53 +44,53 @@ static string parseIdentifier(const string& input, size_t& position)
     return input.substr(start, position - start);
 }
 
-ExprPtr parseExpression(const string& input, size_t& position);
-ExprPtr parseTerm(const string& input, size_t& position);
-ExprPtr parseFactor(const string& input, size_t& position);
+ExpressionPointer parseExpression(const string& input, size_t& position);
+ExpressionPointer parseTerm(const string& input, size_t& position);
+ExpressionPointer parseFactor(const string& input, size_t& position);
 
-ExprPtr parseExpression(const string& input, size_t& position)
+ExpressionPointer parseExpression(const string& input, size_t& position)
 {
-    ExprPtr left = parseTerm(input, position);
+    ExpressionPointer left = parseTerm(input, position);
     skipSpaces(input, position);
 
     while (position < input.size() && (input[position] == '+' || input[position] == '-'))
     {
         char op = input[position++];
-        ExprPtr right = parseTerm(input, position);
-        left = make_unique<BinaryOp>(op, move(left), move(right));
+        ExpressionPointer right = parseTerm(input, position);
+        left = make_unique<BinaryOperation>(op, move(left), move(right));
         skipSpaces(input, position);
     }
 
     return left;
 }
 
-ExprPtr parseTerm(const string& input, size_t& position)
+ExpressionPointer parseTerm(const string& input, size_t& position)
 {
-    ExprPtr left = parseFactor(input, position);
+    ExpressionPointer left = parseFactor(input, position);
     skipSpaces(input, position);
 
     while (position < input.size() && (input[position] == '*' || input[position] == '/'))
     {
         char op = input[position++];
-        ExprPtr right = parseFactor(input, position);
-        left = make_unique<BinaryOp>(op, move(left), move(right));
+        ExpressionPointer right = parseFactor(input, position);
+        left = make_unique<BinaryOperation>(op, move(left), move(right));
         skipSpaces(input, position);
     }
 
     return left;
 }
 
-ExprPtr parseFactor(const string& input, size_t& position)
+ExpressionPointer parseFactor(const string& input, size_t& position)
 {
     skipSpaces(input, position);
 
     if (input[position] == '-' || input[position] == '+')
     {
         char sign = input[position++];
-        ExprPtr factor = parseFactor(input, position);
+        ExpressionPointer factor = parseFactor(input, position);
         if (sign == '-')
         {
-            return make_unique<BinaryOp>('*', make_unique<Number>(-1), move(factor));
+            return make_unique<BinaryOperation>('*', make_unique<Number>(-1), move(factor));
         }
         else
         {
@@ -101,7 +101,7 @@ ExprPtr parseFactor(const string& input, size_t& position)
     if (input[position] == '(')
         {
         position++;
-        ExprPtr expr = parseExpression(input, position);
+        ExpressionPointer expr = parseExpression(input, position);
         skipSpaces(input, position);
         if (position >= input.size() || input[position] != ')')
         {
@@ -119,7 +119,7 @@ ExprPtr parseFactor(const string& input, size_t& position)
         if (position < input.size() && input[position] == '(')
         {
             position++;
-            vector<ExprPtr> args;
+            vector<ExpressionPointer> args;
 
             skipSpaces(input, position);
             if (input[position] != ')')
@@ -155,7 +155,7 @@ ExprPtr parseFactor(const string& input, size_t& position)
     return make_unique<Number>(parseNumber(input, position));
 }
 
-ExprPtr parse(const string& input)
+ExpressionPointer parse(const string& input)
 {
     size_t position = 0;
     skipSpaces(input, position);
@@ -172,7 +172,7 @@ ExprPtr parse(const string& input)
         }
 
         position++;
-        ExprPtr val = parseExpression(input, position);
+        ExpressionPointer val = parseExpression(input, position);
         skipSpaces(input, position);
         if (position != input.length())
         {
@@ -181,7 +181,7 @@ ExprPtr parse(const string& input)
         return make_unique<Assignment>(name, move(val));
     }
 
-    ExprPtr result = parseExpression(input, position);
+    ExpressionPointer result = parseExpression(input, position);
     skipSpaces(input, position);
     if (position != input.length())
     {

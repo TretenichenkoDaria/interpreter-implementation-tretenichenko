@@ -4,7 +4,7 @@
 #include "ast.hpp"
 using namespace std;
 
-ExprPtr parse(const std::string& input);
+ExpressionPointer parse(const std::string& input);
 
 int main()
 {

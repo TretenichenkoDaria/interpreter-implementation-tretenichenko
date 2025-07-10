@@ -2,30 +2,30 @@
 #include <stdexcept>
 #include <cmath>
 
-double Variable::evaluate(Context& ctx) const
+double Variable::evaluate(Context& context)
 {
-    auto it = ctx.variables.find(name);
-    if (it == ctx.variables.end())
+    auto iterator = context.variables.find(name);
+    if (iterator == context.variables.end())
     {
         throw runtime_error("undefined variable");
     }
-    return it->second;
+    return iterator->second;
 }
 
-double Assignment::evaluate(Context& ctx) const
+double Assignment::evaluate(Context& context)
 {
-    double val = value->evaluate(ctx);
-    ctx.variables[name] = val;
+    double val = value->evaluate(context);
+    context.variables[name] = val;
     return val;
 }
 
 
-double FunctionCall::evaluate(Context& ctx) const
+double FunctionCall::evaluate(Context& context)
 {
     vector<double> argValues;
     for (const auto& arg : args)
     {
-        argValues.push_back(arg->evaluate(ctx));
+        argValues.push_back(arg->evaluate(context));
     }
 
     if (name == "min")
@@ -65,10 +65,10 @@ double FunctionCall::evaluate(Context& ctx) const
     throw runtime_error("unknown function");
 }
 
-double BinaryOp::evaluate(Context& ctx) const
+double BinaryOperation::evaluate(Context& context)
 {
-    double l = left->evaluate(ctx);
-    double r = right->evaluate(ctx);
+    double l = left->evaluate(context);
+    double r = right->evaluate(context);
 
     switch (operation)
     {

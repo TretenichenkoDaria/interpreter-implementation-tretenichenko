@@ -1,4 +1,3 @@
-#pragma once
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -12,37 +11,37 @@ struct Context
 
 struct Expression
 {
-    virtual double evaluate(Context& ctx) const = 0;
+    virtual double evaluate(Context& context) = 0;
     virtual ~Expression() = default;
 };
 
-using ExprPtr = unique_ptr<Expression>;
+using ExpressionPointer = unique_ptr<Expression>;
 
 struct Number : Expression
 {
     double value;
-    Number(double v) : value(v) {}
-    double evaluate(Context&) const override { return value; }
+    Number(double value) : value(value) {}
+    double evaluate(Context&) override { return value; }
 };
 
-struct BinaryOp : Expression
+struct BinaryOperation : Expression
 {
     char operation;
-    ExprPtr left, right;
+    ExpressionPointer left, right;
 
-    BinaryOp(char op, ExprPtr l, ExprPtr r) : operation(op), left(move(l)), right(move(r)) {}
+    BinaryOperation(char operation, ExpressionPointer left, ExpressionPointer right) : operation(operation), left(move(left)), right(move(right)) {}
 
-    double evaluate(Context& ctx) const override;
+    double evaluate(Context& context) override;
 };
 
 struct FunctionCall : Expression
 {
     string name;
-    vector<ExprPtr> args;
+    vector<ExpressionPointer> args;
 
-    FunctionCall(string name, vector<ExprPtr> args) : name(move(name)), args(move(args)) {}
+    FunctionCall(string name, vector<ExpressionPointer> args) : name(move(name)), args(move(args)) {}
 
-    double evaluate(Context& ctx) const override;
+    double evaluate(Context& context) override;
 };
 
 struct Variable : Expression
@@ -51,16 +50,15 @@ struct Variable : Expression
 
     Variable(string name) : name(move(name)) {}
 
-    double evaluate(Context& ctx) const override;
+    double evaluate(Context& context) override;
 };
 
 struct Assignment : Expression
 {
     string name;
-    ExprPtr value;
+    ExpressionPointer value;
 
-    Assignment(string name, ExprPtr val) : name(move(name)), value(move(val)) {}
+    Assignment(string name, ExpressionPointer value) : name(move(name)), value(move(value)) {}
 
-    double evaluate(Context& ctx) const override;
+    double evaluate(Context& context) override;
 };
-
